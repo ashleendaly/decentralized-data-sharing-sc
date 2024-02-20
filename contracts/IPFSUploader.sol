@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.20;
 
-contract UploadAndRequestIPFS {
+contract UploadIPFS {
     struct UploadMetadata {
         uint uploadedAt;
         string policyString;
