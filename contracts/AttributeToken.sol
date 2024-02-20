@@ -1,26 +1,31 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.20; 
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 
-contract AttributeToken is ERC1155, Ownable, ERC1155Burnable {
+contract AttributeToken is ERC1155, ERC1155Burnable {
     mapping(uint256 => address) public tokenCreators;
 
-    constructor(address initialOwner) ERC1155("") Ownable(initialOwner) {}
-
-    function setURI(string memory newuri) public onlyOwner {
-        _setURI(newuri);
-    }
+    constructor() ERC1155("") {}
 
     function mint(
-        address account,
+        address to,
         uint256 id,
         uint256 amount,
         bytes memory data
-    ) public onlyOwner {
-        _mint(account, id, amount, data);
+    ) public {
+        require(
+            tokenCreators[id] == address(0) || tokenCreators[id] == msg.sender,
+            "Token ID already exists and caller is not the creator"
+        );
+        
+        if (tokenCreators[id] == address(0)) {
+            tokenCreators[id] = msg.sender;
+        }
+
+        _mint(to, id, amount, data);
+
     }
 
     function mintBatch(
@@ -28,7 +33,17 @@ contract AttributeToken is ERC1155, Ownable, ERC1155Burnable {
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) public onlyOwner {
+    ) public {
+        for (uint256 i = 0; i < ids.length; ++i) {
+            require(
+                 tokenCreators[ids[i]] == address(0) || tokenCreators[ids[i]] == msg.sender,
+                "Token ID already exists and caller is not the creator"
+            );
+
+            if (tokenCreators[ids[i]] == address(0)) {
+                tokenCreators[ids[i]] = msg.sender;
+            }
+        }
         _mintBatch(to, ids, amounts, data);
     }
 
@@ -60,7 +75,7 @@ contract AttributeToken is ERC1155, Ownable, ERC1155Burnable {
         super.safeBatchTransferFrom(from, to, ids, amounts, data);
     }
 
-    function callerIsTokenHolder(uint256 id) public view returns (bool) {
-        return balanceOf(msg.sender, id) > 0;
+    function callerIsTokenHolder(address senderToVerify, uint256 id) public view returns (bool) {
+        return balanceOf(senderToVerify, id) > 0;
     }
 }
