@@ -2,22 +2,17 @@
 pragma solidity ^0.8.19;
 
 contract UploadIPFS {
-    struct UploadMetadata {
-        uint uploadedAt;
+    struct UploadObject {
         string policyString;
         string ipfsHash;
     }
 
-    mapping(address => UploadMetadata) public uploads;
+    mapping(address => UploadObject[]) public uploads;
 
-    function upload(
-        string memory ipfsHash,
-        string memory policyString
-    ) external returns (UploadMetadata memory newUpload) {
-        newUpload.uploadedAt = block.timestamp;
+    function upload(string memory ipfsHash, string memory policyString) external returns (UploadObject memory newUpload) {
         newUpload.policyString = policyString;
         newUpload.ipfsHash = ipfsHash;
-        uploads[msg.sender] = newUpload;
+        uploads[msg.sender].push(newUpload);
         return newUpload;
     }
 }

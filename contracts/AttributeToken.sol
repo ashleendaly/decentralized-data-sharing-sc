@@ -9,42 +9,29 @@ contract AttributeToken is ERC1155, ERC1155Burnable {
 
     constructor() ERC1155("") {}
 
-    function mint(
+    function mintNewToken(
         address to,
         uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) public {
-        require(
-            tokenCreators[id] == address(0) || tokenCreators[id] == msg.sender,
-            "Token ID already exists and caller is not the creator"
-        );
+        uint256 amount
+    ) external {
+        require(id > 0, "Token ID must be greater than 0");
+        require(tokenCreators[id] == address(0), "Token ID already exists");
         
-        if (tokenCreators[id] == address(0)) {
-            tokenCreators[id] = msg.sender;
-        }
-
-        _mint(to, id, amount, data);
-
+        tokenCreators[id] = msg.sender;
+        bytes memory defaultData = hex"12";
+        _mint(to, id, amount, defaultData);
     }
 
-    function mintBatch(
+    function mintExistingToken(
         address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) public {
-        for (uint256 i = 0; i < ids.length; ++i) {
-            require(
-                 tokenCreators[ids[i]] == address(0) || tokenCreators[ids[i]] == msg.sender,
-                "Token ID already exists and caller is not the creator"
-            );
+        uint256 id,
+        uint256 amount
+    ) external {
+        require(tokenCreators[id] != address(0), "Token does not exist");
+        require(tokenCreators[id] == msg.sender, "Caller is not the creator of the token");
 
-            if (tokenCreators[ids[i]] == address(0)) {
-                tokenCreators[ids[i]] = msg.sender;
-            }
-        }
-        _mintBatch(to, ids, amounts, data);
+        bytes memory defaultData = hex"12";
+        _mint(to, id, amount, defaultData);
     }
 
     function safeTransferFrom(
@@ -54,28 +41,15 @@ contract AttributeToken is ERC1155, ERC1155Burnable {
         uint256 amount,
         bytes memory data
     ) public override {
-        require(
-            from == tokenCreators[id]
-        );
-        super.safeTransferFrom(from, to, id, amount, data);
-    }
+        require(from == msg.sender, "Caller must be the token owner");
+        require(tokenCreators[id] == msg.sender, "Caller is not the creator of the token");
+        require(balanceOf(msg.sender, id) >= amount, "Caller does not have enough tokens");
 
-    function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) public override {
-        for (uint256 i = 0; i < ids.length; ++i) {
-            require(
-                from == tokenCreators[ids[i]]
-            );
-        }
-        super.safeBatchTransferFrom(from, to, ids, amounts, data);
+        super.safeTransferFrom(from, to, id, amount, data);
     }
 
     function callerIsTokenHolder(address senderToVerify, uint256 id) public view returns (bool) {
         return balanceOf(senderToVerify, id) > 0;
     }
+
 }
