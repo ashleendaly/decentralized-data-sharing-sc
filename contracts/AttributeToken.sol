@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 
 contract AttributeToken is ERC1155, ERC1155Burnable {
     mapping(uint256 => address) public tokenCreators;
+    uint256[] private allTokenIds;
 
     constructor() ERC1155("") {}
 
@@ -18,6 +19,7 @@ contract AttributeToken is ERC1155, ERC1155Burnable {
         require(tokenCreators[id] == address(0), "Token ID already exists");
         
         tokenCreators[id] = msg.sender;
+        allTokenIds.push(id);
         bytes memory defaultData = hex"12";
         _mint(to, id, amount, defaultData);
     }
@@ -48,8 +50,35 @@ contract AttributeToken is ERC1155, ERC1155Burnable {
         super.safeTransferFrom(from, to, id, amount, data);
     }
 
-    function callerIsTokenHolder(address senderToVerify, uint256 id) public view returns (bool) {
-        return balanceOf(senderToVerify, id) > 0;
+    function VerifySignedAddress(bytes32 _hashedMessage, uint8 _v, bytes32 _r, bytes32 _s) public pure returns (address) {
+        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+        bytes32 prefixedHashMessage = keccak256(abi.encodePacked(prefix, _hashedMessage));
+        address signer = ecrecover(prefixedHashMessage, _v, _r, _s);
+        return signer;
+    }
+
+    function generateAttributeList(address holder, bytes32 _hashedMessage, uint8 _v, bytes32 _r, bytes32 _s) public view returns (uint256[] memory) {
+        address signer = VerifySignedAddress(_hashedMessage, _v, _r, _s);
+        require(holder == signer, "Caller must sign message");
+
+        uint256 tokenCount = 0;
+        for (uint256 i = 0; i < allTokenIds.length; i++) {
+            if (balanceOf(holder, allTokenIds[i]) > 0) {
+                tokenCount++;
+            }
+        }
+
+        uint256[] memory heldTokens = new uint256[](tokenCount);
+        uint256 resultIndex = 0;
+        for (uint256 i = 0; i < allTokenIds.length; i++) {
+            if (balanceOf(holder, allTokenIds[i]) > 0) {
+                heldTokens[resultIndex] = allTokenIds[i];
+                resultIndex++;
+            }
+        }
+
+        return heldTokens;
+
     }
 
 }
