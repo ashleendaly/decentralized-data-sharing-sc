@@ -70,11 +70,19 @@ contract AttributeToken is ERC1155, ERC1155Burnable {
         uint256 id,
         uint256 amount
     ) public override {
-        require(tokenCreators[id] != address(0), "Token does not exist");
-        require(balanceOf(account, id) >= amount, "Account does not hold tokens requested to burn");
-        require(tokenCreators[id] == msg.sender, "Caller is not the creator of the token");
-        super.burn(account, id, amount);
-    }
+        require(tokenCreators[id] != address(0), "Token does not exist"); 
+        require(balanceOf(account, id) >= amount, "Account does not hold tokens requested to burn"); 
+
+        if (tokenCreators[id] != _msgSender()) {
+            require(
+                account == _msgSender() || isApprovedForAll(account, _msgSender()),
+                "Caller is not token owner nor approved"
+            );
+        }
+
+        _burn(account, id, amount); 
+        }
+
 
     function burnBatch(
         address account,
@@ -82,12 +90,20 @@ contract AttributeToken is ERC1155, ERC1155Burnable {
         uint256[] memory amounts
     ) public override {
         for (uint i = 0; i < ids.length; i++) {
-            require(tokenCreators[ids[i]] != address(0), "Token does not exist");
+            require(tokenCreators[ids[i]] != address(0), "Token does not exist"); 
             require(balanceOf(account, ids[i]) >= amounts[i], "Account does not hold tokens requested to burn");
-            require(tokenCreators[ids[i]] == msg.sender, "Caller is not the token creator for all tokens");
+            
+            if (tokenCreators[ids[i]] != _msgSender()) {
+                require(
+                    account == _msgSender() || isApprovedForAll(account, _msgSender()),
+                    "Caller is not token owner nor approved for all tokens"
+                );
+            }
         }
-        super.burnBatch(account, ids, amounts);
+
+        _burnBatch(account, ids, amounts); 
     }
+
 
     function VerifySignedAddress(bytes32 _hashedMessage, uint8 _v, bytes32 _r, bytes32 _s) public pure returns (address) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
