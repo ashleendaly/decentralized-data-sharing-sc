@@ -59,10 +59,34 @@ contract AttributeToken is ERC1155, ERC1155Burnable {
     ) public override {
         for (uint256 i = 0; i < ids.length; ++i) {
             require(from == msg.sender, "Caller must be the token owner");
-            require(tokenCreators[ids[i]] == msg.sender, "Caller is not the creator of the token");
+            require(tokenCreators[ids[i]] == msg.sender, "Caller is not the token creator for all tokens");
             require(balanceOf(msg.sender, ids[i]) >= amounts[i], "Caller does not have enough tokens");
         }
         super.safeBatchTransferFrom(from, to, ids, amounts, data);
+    }
+
+    function burn(
+        address account,
+        uint256 id,
+        uint256 amount
+    ) public override {
+        require(tokenCreators[id] != address(0), "Token does not exist");
+        require(balanceOf(account, id) >= amount, "Account does not hold tokens requested to burn");
+        require(tokenCreators[id] == msg.sender, "Caller is not the creator of the token");
+        super.burn(account, id, amount);
+    }
+
+    function burnBatch(
+        address account,
+        uint256[] memory ids,
+        uint256[] memory amounts
+    ) public override {
+        for (uint i = 0; i < ids.length; i++) {
+            require(tokenCreators[ids[i]] != address(0), "Token does not exist");
+            require(balanceOf(account, ids[i]) >= amounts[i], "Account does not hold tokens requested to burn");
+            require(tokenCreators[ids[i]] == msg.sender, "Caller is not the token creator for all tokens");
+        }
+        super.burnBatch(account, ids, amounts);
     }
 
     function VerifySignedAddress(bytes32 _hashedMessage, uint8 _v, bytes32 _r, bytes32 _s) public pure returns (address) {
