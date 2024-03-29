@@ -25,5 +25,5 @@ Before starting, ensure you have the following installed:
 
 You must have the following environment variables in a .env file:
 
-- SEPOLIA_URL: An API url to connect to the sepolia blockchain, i.e., one provided by an Infura account
-- PRIVATE_KEY: The private key of from a cryptorgraphic wallet, i.e., a metamask private key
+- `SEPOLIA_URL`: An API url to connect to the sepolia blockchain, i.e., one provided by an Infura account
+- `PRIVATE_KEY`: The private key of from a cryptorgraphic wallet, i.e., a metamask private key
